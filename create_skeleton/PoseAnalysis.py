@@ -1,6 +1,7 @@
 import cv2
 import time
 import numpy as np
+import sys
 
 MODE = "MPI" # Keypoint Detection Dataset
 
@@ -24,18 +25,25 @@ inWidth = 368
 inHeight = 368
 threshold = 0.1
 
-input_source = "man.mp4"
+input_source = sys.argv[1]
 cap = cv2.VideoCapture(input_source)
 hasFrame, frame = cap.read()
 
-vid_writer = cv2.VideoWriter('output.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10,
-                             (frame.shape[1], frame.shape[0]))
+print(cap.get(3), cap.get(4), frame.shape[0], frame.shape[1])
+#writer_code = cv2.VideoWriter_fourcc(*'FMP4')
+vid_writer = cv2.VideoWriter('output_avis/' + sys.argv[1].split('/')[1][:-4] + '_output.avi',
+                             cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 
+                             10, (frame.shape[1], frame.shape[0]))
+
 # Read the network into Memory
 net = cv2.dnn.readNetFromCaffe(protoFile, weightsFile)
 
 while cv2.waitKey(1) < 0:
     t = time.time()
     hasFrame, frame = cap.read()
+    if hasFrame == False:
+        break
+
     frameCopy = np.copy(frame)
     if not hasFrame:
         cv2.waitKey()

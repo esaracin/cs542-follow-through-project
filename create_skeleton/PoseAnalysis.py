@@ -24,7 +24,7 @@ inWidth = 368
 inHeight = 368
 threshold = 0.1
 
-input_source = "trial.mp4"
+input_source = "man.mp4"
 cap = cv2.VideoCapture(input_source)
 hasFrame, frame = cap.read()
 

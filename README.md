@@ -10,7 +10,7 @@
 To run PoseAnalysis from basic linux system:
 
 unset DISPLAY XAUTHORITY
-xvbf-run python PoseAnalysis.py input_mp4s/filename.mp4
+xvfb-run python PoseAnalysis.py input_mp4s/filename.mp4
 
 
 ToDo:

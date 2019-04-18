@@ -24,7 +24,8 @@ Create average template skeletons for each point in shot:
 	- We want base of shot
 	- Beginning of ascent
 	- Release of ball
-- Create an average skeleton from them for use later
+- Create an average skeleton from them for use later: edit single frame template code to average the templates into one? Or simply use one of the output images..
+- First need to draw frames that are just the skeletons themselves on a blank background (np.zeros for the blank background frames): after computing the skeleton, draw it on a blank frame
 
 Taking an input video w/ skeleton and creating a tuple:
 -computing length, release angles, etc. based on template matching with average skeleton from previous step

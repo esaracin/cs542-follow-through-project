@@ -44,6 +44,7 @@ while cv2.waitKey(1) < 0 and hasFrame == True:
     #    break
 
     frameCopy = np.copy(frame)
+    blank_frame = np.zeros((frameCopy.shape[0], frame.shape[1], 3), np.uint8)
     if not hasFrame:
         cv2.waitKey()
         break
@@ -89,9 +90,9 @@ while cv2.waitKey(1) < 0 and hasFrame == True:
         partB = pair[1]
 
         if points[partA] and points[partB]:
-            cv2.line(frame, points[partA], points[partB], (0, 255, 255), 3, lineType=cv2.LINE_AA)
-            cv2.circle(frame, points[partA], 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
-            cv2.circle(frame, points[partB], 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
+            cv2.line(blank_frame, points[partA], points[partB], (0, 255, 255), 3, lineType=cv2.LINE_AA)
+            cv2.circle(blank_frame, points[partA], 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
+            cv2.circle(blank_frame, points[partB], 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
 
     cv2.putText(frame, "time taken = {:.2f} sec".format(time.time() - t), (50, 50), cv2.FONT_HERSHEY_COMPLEX, .8,
                 (255, 50, 0), 2, lineType=cv2.LINE_AA)
@@ -99,7 +100,7 @@ while cv2.waitKey(1) < 0 and hasFrame == True:
     # cv2.imshow('Output-Keypoints', frameCopy)
     cv2.imshow('Output-Skeleton', frame)
 
-    vid_writer.write(frame)
+    vid_writer.write(blank_frame)
     hasFrame, frame = cap.read()
 
 vid_writer.release()

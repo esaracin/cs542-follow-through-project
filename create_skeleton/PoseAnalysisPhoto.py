@@ -37,14 +37,12 @@ vid_writer = cv2.VideoWriter('output_jpgs/' + output_name + '.jpg',
 # Read the network into Memory
 net = cv2.dnn.readNetFromCaffe(protoFile, weightsFile)
 
-while cv2.waitKey(1) < 0 and hasFrame == True:
+while cv2.waitKey(1) < 0 and hasFrame:
     t = time.time()
-#    hasFrame, frame = cap.read()
-    #if hasFrame == False:
-    #    break
 
     frameCopy = np.copy(frame)
-    blank_frame = np.zeros((frameCopy.shape[0], frame.shape[1], 3), np.uint8)
+    blank_frame = np.zeros((frame.shape[0], frame.shape[1], 3), np.uint8)
+
     if not hasFrame:
         cv2.waitKey()
         break
@@ -90,6 +88,7 @@ while cv2.waitKey(1) < 0 and hasFrame == True:
         partB = pair[1]
 
         if points[partA] and points[partB]:
+            print(points[partA], points[partB])
             cv2.line(blank_frame, points[partA], points[partB], (0, 255, 255), 3, lineType=cv2.LINE_AA)
             cv2.circle(blank_frame, points[partA], 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
             cv2.circle(blank_frame, points[partB], 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)

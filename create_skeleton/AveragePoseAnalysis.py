@@ -38,7 +38,7 @@ output_name = input_dir.split('/')[2] + input_dir.split('/')[3][:-8]
 photo_ind = 0
 skeleton_dict = {}
 for f in iglob(input_dir):
-
+    print(f)
     input_source = f
     cap = cv2.VideoCapture(input_source)
     hasFrame, frame = cap.read()

@@ -139,12 +139,14 @@ for j in range(len(skeleton_dict[0])):
         for c in range(2):
             averages[j][r][c] = int(averages[j][r][c] / len(skeleton_dict))
 
+print(frame_width, frame_height)
+
 # Finally, write our average skeleton for this directory onto a blank frame
 vid_writer = cv2.VideoWriter('output_jpgs/average_' + output_name + '.jpg',
                          cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 
-                         10, (frame_width, frame_height))
+                         10, (500, 400))
 
-blank_frame = np.zeros((frame_height, frame_width, 3), np.uint8)
+blank_frame = np.zeros((400, 500, 3), np.uint8)
 for _, value in averages.items():
     pointA = tuple([int(val) for val in value[0]])
     pointB = tuple([int(val) for val in value[1]])

@@ -12,6 +12,9 @@ To run PoseAnalysis from basic linux system:
 unset DISPLAY XAUTHORITY
 xvfb-run python PoseAnalysis.py input_mp4s/filename.mp4
 
+To Average photos from an input directory into a single, centered, skeleton:
+xvfb-run python AveragePoseAnalysis.py ../basketball_photos/base/ 
+
 
 ToDo:
 

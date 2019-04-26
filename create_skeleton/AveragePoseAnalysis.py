@@ -139,21 +139,44 @@ for j in range(len(skeleton_dict[0])):
         for c in range(2):
             averages[j][r][c] = int(averages[j][r][c] / len(skeleton_dict))
 
-print(frame_width, frame_height)
 
 # Finally, write our average skeleton for this directory onto a blank frame
 vid_writer = cv2.VideoWriter('output_jpgs/average_' + output_name + '.jpg',
                          cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 
-                         10, (500, 400))
+                         10, (450, 600))
 
-blank_frame = np.zeros((400, 500, 3), np.uint8)
+blank_frame = np.zeros((600, 450, 3), np.uint8)
+i = 0
+
+center_point = tuple(averages[1][0])
+
+# Normalize the center point to be half the width of the image,
+# and one-third the height.
+x_diff = (blank_frame.shape[1] // 2) - center_point[0]
+y_diff = (blank_frame.shape[0] // 3) - center_point[1]
+
+
 for _, value in averages.items():
-    pointA = tuple([int(val) for val in value[0]])
-    pointB = tuple([int(val) for val in value[1]])
+    pointA = [int(val) for val in value[0]]
+    pointB = [int(val) for val in value[1]]
+
+    pointA[0] = int(pointA[0] + x_diff)
+    pointA[1] = int(pointA[1] + y_diff)
+    pointB[0] = int(pointB[0] + x_diff)
+    pointB[1] = int(pointB[1] + y_diff)
+
+    pointA = tuple(pointA)
+    pointB = tuple(pointB)
 
     cv2.line(blank_frame, pointA, pointB, (0, 255, 255), 3, lineType=cv2.LINE_AA)
-    cv2.circle(blank_frame, pointA, 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
+    if pointA == center_point:
+        cv2.circle(blank_frame, pointA, 8, (255, 0, 255), thickness=-1, lineType=cv2.FILLED)
+    else:
+        cv2.circle(blank_frame, pointA, 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
+
     cv2.circle(blank_frame, pointB, 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
+
+    i += 1
 
 
 vid_writer.write(blank_frame)

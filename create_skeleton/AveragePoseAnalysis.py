@@ -3,6 +3,7 @@ import time
 import numpy as np
 import sys
 from glob import iglob
+import pickle
 
 MODE = "MPI" # Keypoint Detection Dataset
 
@@ -155,8 +156,8 @@ center_point = tuple(averages[1][0])
 x_diff = (blank_frame.shape[1] // 2) - center_point[0]
 y_diff = (blank_frame.shape[0] // 3) - center_point[1]
 
-
-for _, value in averages.items():
+average_joints = {i: point for i in range(len(points))}
+for key, value in averages.items():
     pointA = [int(val) for val in value[0]]
     pointB = [int(val) for val in value[1]]
 
@@ -175,9 +176,18 @@ for _, value in averages.items():
         cv2.circle(blank_frame, pointA, 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
 
     cv2.circle(blank_frame, pointB, 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
-
+    
+    # Add the points from this line to the joint dictionary, if they haven't
+    # already been added
+    first = POSE_PAIRS[key][0]
+    second = POSE_PAIRS[key][1]
+    average_joints[first] = pointA
+    average_joints[second] = pointB
     i += 1
 
+
+with open('average_joints/average_joints_' + output_name + '.pickle', 'wb') as handle:
+    pickle.dump(average_joints, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 vid_writer.write(blank_frame)
 vid_writer.release()

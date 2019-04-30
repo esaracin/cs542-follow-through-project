@@ -2,6 +2,8 @@ import numpy as np
 import cv2
 import time
 import sys
+import glob
+import pickle
 
 # Globally define our CV2 Information that will be used to add every sample
 protoFile = "pose_models/pose/mpi/pose_deploy_linevec_faster_4_stages.prototxt"
@@ -49,7 +51,12 @@ class UserModel(object):
 
         # Read in our averaged templates to be matched
         base_template = 'output_jpgs/average_base.jpg' 
+        with open('average_joints/average_joints_base.pickle', 'rb') as handle:
+            base_joints = pickle.load(handle)
+
         release_template = 'output_jpgs/average_release.jpg'
+        with open('average_joints/average_joints_release.pickle', 'rb') as handle:
+            release_joints = pickle.load(handle)
 
         _, base = cv2.VideoCapture(base_template).read()
         _, release = cv2.VideoCapture(release_template).read()
@@ -59,9 +66,9 @@ class UserModel(object):
         cap = cv2.VideoCapture(jpg)
         hasFrame, frame = cap.read()
 
-        vid_writer = cv2.VideoWriter('./test.jpg',
-                         cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 
-                         10, (w, h))
+        #vid_writer = cv2.VideoWriter('./test.jpg',
+        #                 cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 
+        #                 10, (w, h))
 
         while True:
             if not hasFrame:
@@ -71,20 +78,29 @@ class UserModel(object):
 
             # At this point, we have a Blank Skeleton to Template Match with.
             # Compare it with our averaged templates
-            matching = cv2.matchTemplate(skeleton_frame, release, cv2.TM_CCOEFF_NORMED)
-            print(matching)
-            print(np.where(matching >= .08))
+            #matching = cv2.matchTemplate(skeleton_frame, release, cv2.TM_CCOEFF_NORMED)
+            print('comparison with base template: ')
+            print(self.compare_images(skeleton_frame, base))
 
-#            for pt in  zip(*loc[::-1]): 
-#                cv2.rectangle(skeleton_frame, pt, (pt[0] + w, pt[1] + h), (255,255,255), 2) 
+            print('comparison with release template: ')
+            print(self.compare_images(skeleton_frame, release))
+            print()
 
-#            vid_writer.write(skeleton_frame)
             hasFrame, frame = cap.read()
 
         # Update user metadata, given this sample
         self.num_samples += 1
-        vid_writer.release()
+        #vid_writer.release()
         return
+
+    def compare_images(self, img1, img2):
+        count = 1
+        for r in range(img1.shape[0]):
+            for c in range(img1.shape[1]):
+                if np.any(img1[r, c]) and np.any(img2[r, c]):
+                    count += 1
+
+        return count / (img1.shape[0] * img1.shape[1])
 
     def draw_skeleton(self, frame, net, h, w):
         '''
@@ -165,5 +181,7 @@ class UserModel(object):
 
         return blank_frame, joints
 
-u = UserModel()
-u.add_sample('../basketball_photos/base/001.jpg')
+for f in glob.iglob('../basketball_photos/base/*'):
+    print(f)
+    u = UserModel()
+    u.add_sample(f)

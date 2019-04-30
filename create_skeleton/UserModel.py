@@ -38,7 +38,7 @@ class UserModel(object):
                          self.avg_base_angle, self.avg_release_angle])
 
 
-    def add_sample(self, jpg):
+    def add_sample(self, jpg, thresh=.08):
         '''
             Given a called UserModel object, and .jpg video file, does
             template matching to add the statistics for this model to our
@@ -47,34 +47,54 @@ class UserModel(object):
         # Read the network into Memory
         net = cv2.dnn.readNetFromCaffe(protoFile, weightsFile)
 
+        # Read in our averaged templates to be matched
         base_template = 'output_jpgs/average_base.jpg' 
         release_template = 'output_jpgs/average_release.jpg'
 
+        _, base = cv2.VideoCapture(base_template).read()
+        _, release = cv2.VideoCapture(release_template).read()
+        h, w = base.shape[0], base.shape[1]
+
+        # Read in the User's sample video
         cap = cv2.VideoCapture(jpg)
         hasFrame, frame = cap.read()
 
         vid_writer = cv2.VideoWriter('./test.jpg',
-                             cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 
-                             10, (frame.shape[1], frame.shape[0]))
+                         cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 
+                         10, (w, h))
+
         while True:
             if not hasFrame:
                 break
-
-            skeleton_frame = self.draw_skeleton(frame, net)
-            vid_writer.write(skeleton_frame)
+            # Draw the skeleton over the most recent frame
+            skeleton_frame, joints = self.draw_skeleton(frame, net, h, w)
 
             # At this point, we have a Blank Skeleton to Template Match with.
-            # Center the Skeleton, and compare it with our average templates!
+            # Compare it with our averaged templates
+            matching = cv2.matchTemplate(skeleton_frame, release, cv2.TM_CCOEFF_NORMED)
+            print(matching)
+            print(np.where(matching >= .08))
+
+#            for pt in  zip(*loc[::-1]): 
+#                cv2.rectangle(skeleton_frame, pt, (pt[0] + w, pt[1] + h), (255,255,255), 2) 
+
+#            vid_writer.write(skeleton_frame)
             hasFrame, frame = cap.read()
+
+        # Update user metadata, given this sample
+        self.num_samples += 1
+        vid_writer.release()
         return
 
-    def draw_skeleton(self, frame, net):
+    def draw_skeleton(self, frame, net, h, w):
+        '''
+            Helper method that takes a frame and the net object, and returns a
+            blank frame with the corresponding skeleton template over it, as
+            well as a list of that skeleton's joints, as tuples.
+        '''
         t = time.time()
 
-
-            #frameCopy = np.copy(frame)
-        blank_frame = np.zeros((frame.shape[0], frame.shape[1], 3), np.uint8)
-
+        blank_frame = np.zeros((h, w, 3), np.uint8)
         frameWidth = frame.shape[1]
         frameHeight = frame.shape[0]
     
@@ -85,7 +105,6 @@ class UserModel(object):
      
         # makes a forward pass through the network, i.e. making a prediction
         output = net.forward() # 4D matrix, 1: image ID, 2: index of a keypoint, 3: height, 4: width of output map
-
         H = output.shape[2]
         W = output.shape[3]
     
@@ -103,8 +122,8 @@ class UserModel(object):
             y = (frameHeight * point[1]) / H
 
             if prob > threshold:
-                cv2.circle(blank_frame, (int(x), int(y)), 8, (0, 255, 255), thickness=-1, lineType=cv2.FILLED)
-                cv2.putText(blank_frame, "{}".format(i), (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2,
+                cv2.circle(frame, (int(x), int(y)), 8, (0, 255, 255), thickness=-1, lineType=cv2.FILLED)
+                cv2.putText(frame, "{}".format(i), (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2,
                             lineType=cv2.LINE_AA)
 
                 # Add the point to the list if the probability is greater than the threshold
@@ -113,19 +132,38 @@ class UserModel(object):
                 points.append(None)
 
         # Draw Skeleton
+        joints = []
         for pair in POSE_PAIRS:
             partA = pair[0]
             partB = pair[1]
 
             if points[partA] and points[partB]:
-                cv2.line(blank_frame, points[partA], points[partB], (0, 255, 255), 3, lineType=cv2.LINE_AA)
-                cv2.circle(blank_frame, points[partA], 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
-                cv2.circle(blank_frame, points[partB], 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
+                joints.append((points[partA], points[partB]))
 
-                cv2.imshow('Output-Skeleton', frame)
+        # Normalize the center point to be half the width of the image,
+        # and one-third the height.
+        center_point = tuple(joints[1][0])
 
+        x_diff = (blank_frame.shape[1] // 2) - center_point[0]
+        y_diff = (blank_frame.shape[0] // 3) - center_point[1]
 
-        return blank_frame
+        for joint in joints:
+            pointA = [int(val) for val in joint[0]]
+            pointB = [int(val) for val in joint[1]]
+
+            pointA[0] = int(pointA[0] + x_diff)
+            pointA[1] = int(pointA[1] + y_diff)
+            pointB[0] = int(pointB[0] + x_diff)
+            pointB[1] = int(pointB[1] + y_diff)
+
+            pointA = tuple(pointA)
+            pointB = tuple(pointB)
+
+            cv2.line(blank_frame, pointA, pointB, (0, 255, 255), 3, lineType=cv2.LINE_AA)
+            cv2.circle(blank_frame, pointA, 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
+            cv2.circle(blank_frame, pointB, 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
+
+        return blank_frame, joints
 
 u = UserModel()
 u.add_sample('../basketball_photos/base/001.jpg')

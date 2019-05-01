@@ -217,7 +217,7 @@ class UserModel(object):
 
         return blank_frame, average_joints
 
-for f in glob.iglob('../basketball_photos/release/*'):
+for f in glob.iglob('../basketball_photos/base/*'):
     print(f)
     u = UserModel()
     u.add_sample(f)

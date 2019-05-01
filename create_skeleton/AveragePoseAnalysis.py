@@ -47,11 +47,6 @@ for f in iglob(input_dir):
     frame_height = frame.shape[0]
     frame_width = frame.shape[1]
 
-    #vid_writer = cv2.VideoWriter('output_jpgs/' + output_name + '.jpg',
-    #                         cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 
-    #                         10, (frame.shape[1], frame.shape[0]))
-
-
     while cv2.waitKey(1) < 0 and hasFrame:
         t = time.time()
 
@@ -144,9 +139,9 @@ for j in range(len(skeleton_dict[0])):
 # Finally, write our average skeleton for this directory onto a blank frame
 vid_writer = cv2.VideoWriter('output_jpgs/average_' + output_name + '.jpg',
                          cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 
-                         10, (450, 600))
+                         10, (1400, 1800))
 
-blank_frame = np.zeros((600, 450, 3), np.uint8)
+blank_frame = np.zeros((1800, 1400, 3), np.uint8)
 i = 0
 
 center_point = tuple(averages[1][0])

@@ -66,9 +66,9 @@ class UserModel(object):
         cap = cv2.VideoCapture(jpg)
         hasFrame, frame = cap.read()
 
-        vid_writer = cv2.VideoWriter('./test.jpg',
-                         cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 
-                         10, (w, h))
+        #vid_writer = cv2.VideoWriter('./test.jpg',
+        #                 cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 
+        #                 10, (w, h))
 
         while True:
             if not hasFrame:
@@ -87,13 +87,13 @@ class UserModel(object):
             print(self.compare_joints(joints, release_joints))
             print()
             
-            vid_writer.write(skeleton_frame)
+        #    vid_writer.write(skeleton_frame)
 
             hasFrame, frame = cap.read()
 
         # Update user metadata, given this sample
         self.num_samples += 1
-        vid_writer.release()
+        #vid_writer.release()
         return
 
     def compare_joints(self, j1, j2):

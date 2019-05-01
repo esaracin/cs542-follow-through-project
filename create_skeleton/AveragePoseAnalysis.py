@@ -154,7 +154,7 @@ center_point = tuple(averages[1][0])
 # Normalize the center point to be half the width of the image,
 # and one-third the height.
 x_diff = (blank_frame.shape[1] // 2) - center_point[0]
-y_diff = (blank_frame.shape[0] // 3) - center_point[1]
+y_diff = (blank_frame.shape[0] // 4) - center_point[1]
 
 average_joints = {i: point for i in range(len(points))}
 for key, value in averages.items():

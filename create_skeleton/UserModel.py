@@ -66,9 +66,9 @@ class UserModel(object):
         cap = cv2.VideoCapture(jpg)
         hasFrame, frame = cap.read()
 
-        #vid_writer = cv2.VideoWriter('./test.jpg',
-        #                 cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 
-        #                 10, (w, h))
+        vid_writer = cv2.VideoWriter('./test.jpg',
+                         cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 
+                         10, (w, h))
 
         while True:
             if not hasFrame:
@@ -78,20 +78,36 @@ class UserModel(object):
 
             # At this point, we have a Blank Skeleton to Template Match with.
             # Compare it with our averaged templates
-            #matching = cv2.matchTemplate(skeleton_frame, release, cv2.TM_CCOEFF_NORMED)
+            # Max of training that's still base is 790: 800 threshold?
             print('comparison with base template: ')
-            print(self.compare_images(skeleton_frame, base))
+            print(self.compare_joints(joints, base_joints))
 
             print('comparison with release template: ')
-            print(self.compare_images(skeleton_frame, release))
+            print(self.compare_joints(joints, release_joints))
             print()
+            
+            vid_writer.write(skeleton_frame)
 
             hasFrame, frame = cap.read()
 
         # Update user metadata, given this sample
         self.num_samples += 1
-        #vid_writer.release()
+        vid_writer.release()
         return
+
+    def compare_joints(self, j1, j2):
+        '''
+            Takes two dictionaries of joints and returns the sum of pairwise
+            Euclidean distances between each joint
+        '''
+
+        dist = 0
+        for joint in j1:
+            pointA = np.array(j1[joint])
+            pointB = np.array(j2[joint])
+            dist += np.linalg.norm(pointA - pointB)
+
+        return dist
 
     def compare_images(self, img1, img2):
         count = 1
@@ -161,9 +177,10 @@ class UserModel(object):
         center_point = tuple(joints[1][0])
 
         x_diff = (blank_frame.shape[1] // 2) - center_point[0]
-        y_diff = (blank_frame.shape[0] // 3) - center_point[1]
+        y_diff = (blank_frame.shape[0] // 4) - center_point[1]
 
-        for joint in joints:
+        average_joints = {i: point for i in range(len(points))}
+        for joint, pair in zip(joints, POSE_PAIRS):
             pointA = [int(val) for val in joint[0]]
             pointB = [int(val) for val in joint[1]]
 
@@ -179,7 +196,15 @@ class UserModel(object):
             cv2.circle(blank_frame, pointA, 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
             cv2.circle(blank_frame, pointB, 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
 
-        return blank_frame, joints
+
+            # Add the points from this line to the joint dictionary, if they haven't
+            # already been added
+            first = pair[0]
+            second = pair[1]
+            average_joints[first] = pointA
+            average_joints[second] = pointB
+
+        return blank_frame, average_joints
 
 for f in glob.iglob('../basketball_photos/base/*'):
     print(f)

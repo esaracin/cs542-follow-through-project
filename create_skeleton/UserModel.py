@@ -79,6 +79,7 @@ class UserModel(object):
             # At this point, we have a Blank Skeleton to Template Match with.
             # Compare it with our averaged templates
             # Max of training that's still base is 790: 800 threshold?
+            # if averaging: 49 is max of training that's still base: 50-55?
             print('comparison with base template: ')
             print(self.compare_joints(joints, base_joints))
 
@@ -107,7 +108,7 @@ class UserModel(object):
             pointB = np.array(j2[joint])
             dist += np.linalg.norm(pointA - pointB)
 
-        return dist
+        return dist / len(j1)
 
     def compare_images(self, img1, img2):
         count = 1
@@ -117,6 +118,16 @@ class UserModel(object):
                     count += 1
 
         return count / (img1.shape[0] * img1.shape[1])
+
+    def compare_left_elbow(self, j1, j2):
+        '''
+        a
+        '''
+
+    def compare_right_elbow(self, j1, j2):
+        '''
+        a
+        '''
 
     def draw_skeleton(self, frame, net, h, w):
         '''
@@ -206,7 +217,7 @@ class UserModel(object):
 
         return blank_frame, average_joints
 
-for f in glob.iglob('../basketball_photos/base/*'):
+for f in glob.iglob('../basketball_photos/release/*'):
     print(f)
     u = UserModel()
     u.add_sample(f)

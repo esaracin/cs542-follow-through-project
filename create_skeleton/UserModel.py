@@ -4,6 +4,7 @@ import time
 import sys
 import glob
 import pickle
+import math
 
 # Globally define our CV2 Information that will be used to add every sample
 protoFile = "pose_models/pose/mpi/pose_deploy_linevec_faster_4_stages.prototxt"
@@ -69,7 +70,9 @@ class UserModel(object):
         #vid_writer = cv2.VideoWriter('./test.jpg',
         #                 cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 
         #                 10, (w, h))
-
+        
+        base_met = False
+        release_met = False
         while True:
             if not hasFrame:
                 break
@@ -80,13 +83,25 @@ class UserModel(object):
             # Compare it with our averaged templates
             # Max of training that's still base is 790: 800 threshold?
             # if averaging: 49 is max of training that's still base: 50-55?
-            print('comparison with base template: ')
-            print(self.compare_joints(joints, base_joints))
+            #print('comparison with base template: ')
+            #print(self.compare_joints(joints, base_joints))
+            #print('elbow joint diff:')
+            #print(self.compare_elbows(joints, base_joints))
 
-            print('comparison with release template: ')
-            print(self.compare_joints(joints, release_joints))
-            print()
-            
+            #print('comparison with release template: ')
+            #print(self.compare_joints(joints, release_joints))
+            #print('elbow joint diff:')
+            #print(self.compare_elbows(joints, release_joints))
+            #print()
+            if (
+                not base_met and 
+                self.compare_joints(joints, base_joints) <= 140 and
+                self.compare_elbows(joints, base_joints) <= 125
+               ):
+                base_met = True
+                print('Found base!')
+                exit(0)
+
         #    vid_writer.write(skeleton_frame)
 
             hasFrame, frame = cap.read()
@@ -119,15 +134,42 @@ class UserModel(object):
 
         return count / (img1.shape[0] * img1.shape[1])
 
-    def compare_left_elbow(self, j1, j2):
-        '''
-        a
-        '''
+    def compare_elbows(self, j1, j2):
+        right = abs(self.right_elbow_angle(j1) - self.right_elbow_angle(j2))
+        left = abs(self.left_elbow_angle(j1) - self.left_elbow_angle(j2))
+        return right + left
 
-    def compare_right_elbow(self, j1, j2):
+    def left_elbow_angle(self, j):
         '''
-        a
+            Given the skeleton's joint dictionary,
+            coputes the angle of the skeleton's left elbow
         '''
+        pointA = np.array(j[5])
+        pointB = np.array(j[6])
+        pointC = np.array(j[7])
+
+        ba = pointA - pointB
+        bc = pointC - pointB
+
+        cosine = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
+
+        return np.degrees(np.arccos(cosine))
+
+    def right_elbow_angle(self, j):
+        '''
+            Given the skeleton's joint dictionary,
+            coputes the angle of the skeleton's right elbow
+        '''
+        pointA = np.array(j[2])
+        pointB = np.array(j[3])
+        pointC = np.array(j[4])
+
+        ba = pointA - pointB
+        bc = pointC - pointB
+
+        cosine = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
+
+        return np.degrees(np.arccos(cosine))
 
     def draw_skeleton(self, frame, net, h, w):
         '''

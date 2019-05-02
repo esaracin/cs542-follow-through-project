@@ -26,26 +26,37 @@ class UserModel(object):
 
         # Features specific to this user's model, initially 0 or None while no
         # videos have been sampled
-        self.avg_ascent_time = 0
+        self.avg_rise_length = 0
         self.avg_shot_length = 0
 
-        self.avg_base_angle = None
-        self.avg_release_angle = None
+        self.avg_base_time = 0
+        self.avg_release_time = 0
+
+        self.avg_right_base_elbow_angle = 0
+        self.avg_right_release_elbow_angle= 0
+        self.avg_left_base_elbow_angle = 0
+        self.avg_left_release_elbow_angle= 0
+
 
     def get_vector(self):
         '''
             Returns this user's model statistics as a numpy array, for
             comparison with any other such vector.
         '''
-        return np.array([self.avg_ascent_time, self.avg_shot_length, 
-                         self.avg_base_angle, self.avg_release_angle])
+        stats = []
+        for key, stat in self.__dict__.items():
+            if key == 'num_samples':
+                continue
+
+            stats.append(stat)
+        return np.array(stats)
 
 
-    def add_sample(self, jpg, thresh=.08):
+    def add_sample(self, mp4, thresh=.08):
         '''
-            Given a called UserModel object, and .jpg video file, does
+            Given a called UserModel object, and .mp4 video file, does
             template matching to add the statistics for this model to our
-            user's average
+            user's average.
         '''
         # Read the network into Memory
         net = cv2.dnn.readNetFromCaffe(protoFile, weightsFile)
@@ -64,15 +75,34 @@ class UserModel(object):
         h, w = base.shape[0], base.shape[1]
 
         # Read in the User's sample video
-        cap = cv2.VideoCapture(jpg)
+        cap = cv2.VideoCapture(mp4)
         hasFrame, frame = cap.read()
 
         #vid_writer = cv2.VideoWriter('./test.jpg',
         #                 cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 
         #                 10, (w, h))
         
+        release_lst = []
+        release_lst_elb = []
+        base_lst_elb = []
+        base_lst = []
+        # Set up our variables for processing image and updating user
+        # statistics
         base_met = False
         release_met = False
+
+        stat_dict = {
+            'right_base_elbow_angle': 0,
+            'left_base_elbow_angle': 0,
+            'right_release_elbow_angle': 0,
+            'left_release_elbow_angle': 0,
+            'shot_length': 0,
+            'rise_length': 0,
+            'base_time': 0,
+            'release_time': 0
+            }
+
+        time_stamp = 0
         while True:
             if not hasFrame:
                 break
@@ -87,29 +117,84 @@ class UserModel(object):
             #print(self.compare_joints(joints, base_joints))
             #print('elbow joint diff:')
             #print(self.compare_elbows(joints, base_joints))
-
             #print('comparison with release template: ')
             #print(self.compare_joints(joints, release_joints))
+            if not base_met:
+                angle = self.compare_elbows(joints, base_joints)
+                if np.isnan(angle):
+                    continue
+                base_lst_elb.append(angle)
+                base_lst.append(self.compare_joints(joints, base_joints))
+            else:
+                angle = self.compare_elbows(joints, release_joints)
+                if np.isnan(angle):
+                    continue
+                release_lst_elb.append(angle)
+                release_lst.append(self.compare_joints(joints, release_joints))
             #print('elbow joint diff:')
             #print(self.compare_elbows(joints, release_joints))
             #print()
-            if (
+            if(
                 not base_met and 
-                self.compare_joints(joints, base_joints) <= 140 and
-                self.compare_elbows(joints, base_joints) <= 125
-               ):
+                self.compare_joints(joints, base_joints) <= 200 and
+                self.compare_elbows(joints, base_joints) <= 150
+              ):
                 base_met = True
+
+                stat_dict['base_time'] = time_stamp
+                stat_dict['left_base_elbow_angle'] = \
+                self.left_elbow_angle(joints) 
+                stat_dict['right_base_elbow_angle'] = \
+                        self.right_elbow_angle(joints)
+
                 print('Found base!')
-                exit(0)
 
-        #    vid_writer.write(skeleton_frame)
+            elif(
+                base_met and 
+                not release_met and
+                self.compare_joints(joints, release_joints) <= 205 and
+                self.compare_elbows(joints, release_joints) <= 60
+                ):
+                release_met = True
 
+                stat_dict['release_time'] = time_stamp
+                stat_dict['rise_length'] = stat_dict['release_time'] - stat_dict['base_time']
+                stat_dict['left_release_elbow_angle'] = \
+                self.left_elbow_angle(joints) 
+                stat_dict['right_release_elbow_angle'] = \
+                        self.right_elbow_angle(joints)
+
+                print('Found release!')
+                break
+
+            time_stamp += 1
             hasFrame, frame = cap.read()
+        
+        stat_dict['shot_length'] = time_stamp
 
         # Update user metadata, given this sample
-        self.num_samples += 1
-        #vid_writer.release()
+        self.average_stats(stat_dict)
+        if not base_met:
+            print('didn\'t find base: lowest joint comparison:', min(base_lst),
+                 min(base_lst_elb))
+            exit(0)
+        elif not release_met:
+            print('didn\'t find release: lowest joint comparison:',
+                  min(release_lst), min(release_lst_elb))
+            exit(0)
+
         return
+
+    def average_stats(self, stats):
+        self.num_samples += 1
+        for stat in stats:
+            to_average = 'avg_' + stat
+
+            self.__dict__[to_average] += stats[stat]
+            if self.num_samples > 1:
+                self.__dict__[to_average] /= 2
+
+        return 
 
     def compare_joints(self, j1, j2):
         '''
@@ -259,7 +344,3 @@ class UserModel(object):
 
         return blank_frame, average_joints
 
-for f in glob.iglob('../basketball_photos/base/*'):
-    print(f)
-    u = UserModel()
-    u.add_sample(f)

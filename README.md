@@ -65,33 +65,41 @@ AveragePoseAnalysis.py:
 	and an average template skeleton will be written to output_jpgs/average_release.jpg. Also, a .pickle file 
 	with the set of joints corresponding to that average skeleton will be written to average_joints/average_joints_release.pickle
 
+UserModel.py:
+	This code shouldn't be called directory, but contains the blueprint class for a given Follow Through user. At time of submission,
+	the functionality of this class is limited, but still useful. Namely, a user can be created, and sample video's of their jumpshot
+	can be added using the add_sample() method to start to build their profile. Additionally, the get_vector() method can be used
+	to return the specific measurements relating to that user's stats.
+
+model_test.py:
+	This code was the first attempt to test our UserModel class. It goes through each of the videos of Professional Basketball players
+	in input_mp4s/2kvids/ and creates a simple model corresponding to each user, which it saves to test_files/pro_user_dict.pickle for processing
+	in later code. Note that it uses another .pickle file, pro_users_seen.pickle, so that the building of these models could be done over time, with	
+	breaks inbetween. **As long as these pickle files still exist in the test_files/ directory, running model_test.py will do nothing, as it will recognize
+	that all of the necessary models have already been built.** Still, in case it's necessary, you can run this file as follows:
+
+		python model_test.py
+
+	and listen to your machine's fan go haywire if you want to ;).
+
+compute_pro_distances.py:
+	This code provides the first test of the Follow Through technology. Reading in the .pickle files written by model_test.py, this script
+	runs two tests:
+	1)	For every pro model in the .pickle file, it gets the vector for each other pro, and computes the Euclidean distance between the 
+		given pro and the current pro being examined. It then sorts these distances, and lists, for the given pro, the three other pro's
+		who's shot-vector is most like their own.
+	2)	It then builds a test user, which uses one of the held-out sample videos of Michael Jordan, and compute's *its* distance from every pro.
+		Again, it lists the top three closest pro models (notice that the closest pro to the held out Michael Jordan video is, thankfully, Michael Jordan)
+		for this sample user.
+
+	Run it from the command line as follows:
+
+		python compute_pro_distances.py
+	
+	and view the printed output. **Note that task 2) in the above may take some time, as creating and adding a video 
+	to the model for a test user is computationally intensive.**
+		
+	
 
 
 
-
-To Average photos from an input directory into a single, centered, skeleton:
-xvfb-run python AveragePoseAnalysis.py ../basketball_photos/base/ 
-
-
-ToDo:
-
-Manipulate parameters for OpenPose code to make skeletons smoother and more accurate:
-- smoothening
-- tweaking parameters
-
-Create average template skeletons for each point in shot:
-- filtering through the image db for base/begin ascent/release images (roughly 45 degrees)
-	- We want base of shot
-	- Beginning of ascent
-	- Release of ball
-- Create an average skeleton from them for use later: edit single frame template code to average the templates into one? Or simply use one of the output images..
-- First need to draw frames that are just the skeletons themselves on a blank background (np.zeros for the blank background frames): after computing the skeleton, draw it on a blank frame
-
-Taking an input video w/ skeleton and creating a tuple:
--computing length, release angles, etc. based on template matching with average skeleton from previous step
-
-Apply previous algorithm to each video (from 2k, user-input videos (us lol))
-
-Compare models using regression (user v pro, user v chosen pro)
-
-lol a paper
